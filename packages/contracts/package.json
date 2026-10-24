@@ -1,0 +1,27 @@
+{
+  "name": "@sachbazaar/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "compile": "hardhat compile",
+    "export-abis": "hardhat compile && tsx scripts/export-abis.ts",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "typecheck": "hardhat compile && tsc --noEmit",
+    "lint": "solhint 'contracts/**/*.sol'",
+    "slither": "bash scripts/run-slither.sh"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "5.0.2",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.14.0",
+    "hardhat": "^2.22.18",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-gas-reporter": "^1.0.8",
+    "solidity-coverage": "^0.8.14",
+    "solhint": "^5.0.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

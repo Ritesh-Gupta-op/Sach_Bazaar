@@ -1,0 +1,5 @@
+{
+  "filter_paths": "node_modules|test|scripts",
+  "solc_disable_warnings": "unused-parameter",
+  "detectors_to_exclude": "incorrect-equality, timestamp, reentrancy-events"
+}
