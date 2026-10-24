@@ -4,9 +4,14 @@ All notable changes to SachBazaar are documented here. The format follows [Keep 
 
 ## [Unreleased] — 2026-10-24
 
-Trace frontend, trace/relay API, journey console, and local demo tooling.
+Trace frontend, trace/relay API, journey console, AI advisory integration, and local demo tooling.
 
 ### Added
+
+- **AI advisory service integration** — the mock FastAPI service is now checked, running, and actually used:
+  - `apps/ai-service`: `/grade` upgraded from a constant `0.0` to a deterministic sha256-seeded quality score (same photo → same grade, different photos spread across bands) with band explanation; requirements moved to `>=` pins because `pydantic 2.10.x` has no Python 3.14 wheels.
+  - API proxy: `POST /v1/ai/grade` (base64 photo in, advisory score/explanation out, forwarded upstream as multipart) and `GET /v1/ai/health`, with clear 502s when the service is down.
+  - Journey console AI card: "Grade photo with AI service" (real file upload) or "use sample photo" buttons call the service, display the score/explanation, and auto-fill the on-chain grade (score bands 1–4) plus the quality-concern flag bit (score < 0.5) before the oracle signs. Verified end-to-end: photo → score 0.422 → grade 3/4 + flag → attestation → public trace page.
 
 - **Journey console** (`apps/web` `/console`) — the mutation side of the demo, verified end-to-end in the browser through a full lifecycle (create → 3 handovers → AI attestation → escrow funding → sale → settlement → farmer withdrawal):
   - Role wallets derived in-browser from Hardhat's public mnemonic, matching the seed's role assignment (co-op, buyer, trucker, cold storage, mandi, oracle, admin + six payout recipients). Local demo only — real users would sign with their own wallets.
