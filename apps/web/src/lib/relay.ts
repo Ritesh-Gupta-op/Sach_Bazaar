@@ -4,9 +4,9 @@ import { chainProvider } from './wallets';
 
 /**
  * The shared package exports its typed-data definitions with `as const`
- * (readonly); ethers' signTypedData wants the mutable shape.
+ * (readonly); ethers' signTypedData/verifyTypedData want the mutable shape.
  */
-const td = (types: Record<string, readonly { name: string; type: string }[]>): Record<string, TypedDataField[]> =>
+export const td = (types: Record<string, readonly { name: string; type: string }[]>): Record<string, TypedDataField[]> =>
   types as Record<string, TypedDataField[]>;
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/v1';
