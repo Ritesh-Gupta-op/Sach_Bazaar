@@ -57,6 +57,19 @@ The NestJS API is versioned under `/v1`. Public consumer access is limited to `G
 
 The trace response also includes `lastRecordHash` — the chain head the next handover's `prevRecordHash` must cite.
 
+## AI advisory
+
+`POST /v1/ai/grade` proxies the FastAPI advisory service (`apps/ai-service`, `AI_SERVICE_URL`): the client sends the photo base64-encoded, the API forwards it upstream as multipart, and the advisory score/explanation come back. Scores are advisory only — they never gate a state transition; the client maps them to the on-chain grade/flags before the oracle signs.
+
+```json
+// request
+{"photoBase64":"..."}
+// response
+{"score":0.422,"explanation":"sha256-seeded quality score (64-byte sample) places this batch in the fair band.","modelVersion":"baseline-mock-0.2"}
+```
+
+`GET /v1/ai/health` reports whether the AI service is reachable.
+
 ## Relayer
 
 Actor actions follow the architecture rule that users sign EIP-712 typed data and a relayer submits. The relayer private key lives only in the API process (`RELAYER_PRIVATE_KEY`).

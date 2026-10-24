@@ -16,7 +16,7 @@ import {
   type BatchesMeta,
   type RelayInfo,
 } from '../lib/relay';
-import { TraceNotFoundError, fetchTrace } from '../lib/api';
+import { TraceNotFoundError, fetchTrace, gradeWithAi, type AiGrade } from '../lib/api';
 import { rupeesPerKg, shortenHex } from '../lib/format';
 import type { TraceResponse } from '../lib/types';
 import { ACTOR_LABELS, PAYOUT_LABELS, PAYOUT_ROLES, actorWallets, payoutWallets } from '../lib/wallets';
@@ -52,6 +52,8 @@ export function ConsolePage() {
   const [flagBits, setFlagBits] = useState<number[]>([0]);
   const [fundAmount, setFundAmount] = useState('250');
   const [salePrice, setSalePrice] = useState('');
+  const [aiGradeResult, setAiGradeResult] = useState<AiGrade | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
 
   useEffect(() => {
     fetchRelayInfo()
@@ -120,6 +122,43 @@ export function ConsolePage() {
   const stage = trace?.stage;
   const handoverPath = stage ? (HANDOVER_PATHS[stage] ?? [])[0] : undefined;
   const canAct = info?.configured === true;
+
+  /** Score → advisory grade bands (1 best … 4 worst) + a quality-concern flag under 0.5. */
+  const applyAiResult = (result: AiGrade) => {
+    setAiGradeResult(result);
+    const g = result.score >= 0.75 ? 1 : result.score >= 0.5 ? 2 : result.score >= 0.25 ? 3 : 4;
+    setGrade(String(g));
+    setFlagBits(result.score < 0.5 ? [0] : []);
+  };
+
+  const runAiGrade = async (base64: string) => {
+    setAiBusy(true);
+    setError(null);
+    try {
+      applyAiResult(await gradeWithAi(base64));
+    } catch (e) {
+      setError(`AI service: ${(e as Error).message}`);
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const onPhotoPicked = async (file: File | undefined) => {
+    if (!file) return;
+    const buffer = await file.arrayBuffer();
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    await runAiGrade(btoa(binary));
+  };
+
+  const gradeWithSamplePhoto = () => {
+    const sample = new Uint8Array(64);
+    crypto.getRandomValues(sample);
+    let binary = '';
+    for (let i = 0; i < sample.length; i++) binary += String.fromCharCode(sample[i]);
+    void runAiGrade(btoa(binary));
+  };
 
   return (
     <div className="space-y-6">
@@ -248,31 +287,51 @@ export function ConsolePage() {
                 busy={busy === 'attest'}
                 disabled={!canAct || !domain}
                 inputs={
-                  <div className="flex items-end gap-3">
-                    <label className="text-sm">
-                      <span className="block text-xs text-stone-400">Grade</span>
-                      <select value={grade} onChange={(e) => setGrade(e.target.value)} className="mt-1 rounded-lg border border-stone-300 px-3 py-2">
-                        {[1, 2, 3, 4].map((g) => (
-                          <option key={g} value={g}>
-                            {g}/4
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <div className="text-sm">
-                      <span className="block text-xs text-stone-400">Advisory flags</span>
-                      <div className="mt-1 flex gap-2">
-                        {[0, 1, 2, 3].map((bit) => (
-                          <label key={bit} className="flex items-center gap-1 text-xs">
-                            <input
-                              type="checkbox"
-                              checked={flagBits.includes(bit)}
-                              onChange={(e) => setFlagBits((prev) => (e.target.checked ? [...prev, bit] : prev.filter((b) => b !== bit)))}
-                            />
-                            bit {bit}
-                          </label>
-                        ))}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <label className="text-sm">
+                        <span className="block text-xs text-stone-400">Grade</span>
+                        <select value={grade} onChange={(e) => setGrade(e.target.value)} className="mt-1 rounded-lg border border-stone-300 px-3 py-2">
+                          {[1, 2, 3, 4].map((g) => (
+                            <option key={g} value={g}>
+                              {g}/4
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="text-sm">
+                        <span className="block text-xs text-stone-400">Advisory flags</span>
+                        <div className="mt-1 flex gap-2">
+                          {[0, 1, 2, 3].map((bit) => (
+                            <label key={bit} className="flex items-center gap-1 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={flagBits.includes(bit)}
+                                onChange={(e) => setFlagBits((prev) => (e.target.checked ? [...prev, bit] : prev.filter((b) => b !== bit)))}
+                              />
+                              bit {bit}
+                            </label>
+                          ))}
+                        </div>
                       </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 border-t border-stone-100 pt-3">
+                      <label className="cursor-pointer rounded-lg border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50">
+                        {aiBusy ? 'Grading…' : '📷 Grade photo with AI service'}
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => void onPhotoPicked(e.target.files?.[0])} />
+                      </label>
+                      <button
+                        onClick={gradeWithSamplePhoto}
+                        disabled={aiBusy}
+                        className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-40"
+                      >
+                        use sample photo
+                      </button>
+                      {aiGradeResult && (
+                        <span className="text-xs text-stone-500">
+                          score <b>{aiGradeResult.score}</b> → grade <b>{grade}/4</b> · {aiGradeResult.explanation} ({aiGradeResult.modelVersion})
+                        </span>
+                      )}
                     </div>
                   </div>
                 }

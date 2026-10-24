@@ -21,3 +21,18 @@ export async function fetchBatches(): Promise<DemoBatch[]> {
   const body = (await res.json()) as { batches: DemoBatch[] };
   return body.batches;
 }
+
+export type AiGrade = { score: number; explanation: string; modelVersion: string };
+
+export async function gradeWithAi(photoBase64: string): Promise<AiGrade> {
+  const res = await fetch(`${API_URL}/ai/grade`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ photoBase64 }),
+  });
+  const body = (await res.json().catch(() => null)) as (AiGrade & { message?: string }) | null;
+  if (!res.ok || !body?.score) {
+    throw new Error(body?.message ?? `AI grade failed (HTTP ${res.status})`);
+  }
+  return body;
+}
