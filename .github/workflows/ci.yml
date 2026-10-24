@@ -27,3 +27,31 @@ jobs:
         with:
           target: packages/contracts
           slither-args: --config-file packages/contracts/slither.config.json
+
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm typecheck
+      - run: pnpm --filter @sachbazaar/shared --filter @sachbazaar/api --filter @sachbazaar/web test
+
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ai-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pytest -q

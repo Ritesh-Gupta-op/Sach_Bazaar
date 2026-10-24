@@ -8,6 +8,12 @@ Trace frontend, trace/relay API, journey console, AI advisory integration, and l
 
 ### Added
 
+- **Test coverage for every workspace** (previously only the contracts had tests; CI only ran contracts):
+  - `packages/shared`: short-code tests plus a drift guard that fails if the TS typed-data definitions ever hash differently from the typehashes in `BatchRegistry.sol`.
+  - `apps/web` (vitest): formatters, recent-batches storage, and relay payload builders — every signature is verified to recover to the expected signer, deadlines/nonces checked, API error surfacing covered.
+  - `apps/api`: RelayService validation and dispatch against a stubbed chain (missing fields, malformed signatures, past deadlines, settle recipients, revert → 400 with decoded error name), AiService proxy tests (multipart forward, unreachable → 502, bad body → 400), and TraceService aggregation tests (verified flags, tamper detection, BatchNotFound → 404, malformed id → 400).
+  - `apps/ai-service` (pytest): grading determinism (same photo → same score, matching the sha256 seed), different photos differ, band text matches the score.
+  - CI gains `node` (typecheck + shared/api/web tests) and `python` (pytest) jobs alongside the existing contracts job; missing direct deps (`chai`, `@types/chai`) declared so pnpm's isolated layout typechecks.
 - **AI advisory service integration** — the mock FastAPI service is now checked, running, and actually used:
   - `apps/ai-service`: `/grade` upgraded from a constant `0.0` to a deterministic sha256-seeded quality score (same photo → same grade, different photos spread across bands) with band explanation; requirements moved to `>=` pins because `pydantic 2.10.x` has no Python 3.14 wheels.
   - API proxy: `POST /v1/ai/grade` (base64 photo in, advisory score/explanation out, forwarded upstream as multipart) and `GET /v1/ai/health`, with clear 502s when the service is down.
