@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+
 from fastapi import FastAPI, UploadFile
 from pydantic import BaseModel
 
-app = FastAPI(title="SachBazaar AI Service", version="0.1.0")
+app = FastAPI(title="SachBazaar AI Service", version="0.2.0")
 
 
 class AdvisoryResult(BaseModel):
@@ -19,8 +21,30 @@ def health() -> dict[str, str]:
 
 @app.post("/grade", response_model=AdvisoryResult)
 async def grade(photo: UploadFile) -> AdvisoryResult:
-    del photo
-    return AdvisoryResult(score=0.0, explanation="Baseline model is advisory and not configured yet.", modelVersion="baseline-mock-0.1")
+    """Deterministic placeholder grading.
+
+    The score is sha256-seeded from the raw photo bytes so the same photo
+    always grades identically and different photos spread across the range —
+    enough to drive the advisory attestation demo until the real tomato
+    grading model lands (Phase 3).
+    """
+    data = await photo.read()
+    digest = hashlib.sha256(data).digest()
+    score = int.from_bytes(digest[:4], "big") / 2**32
+    band = (
+        "excellent"
+        if score >= 0.75
+        else "good"
+        if score >= 0.5
+        else "fair"
+        if score >= 0.25
+        else "poor"
+    )
+    return AdvisoryResult(
+        score=round(score, 3),
+        explanation=f"sha256-seeded quality score ({len(data)}-byte sample) places this batch in the {band} band.",
+        modelVersion="baseline-mock-0.2",
+    )
 
 
 @app.post("/weight-estimate", response_model=AdvisoryResult)

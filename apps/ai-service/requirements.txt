@@ -1,4 +1,7 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic==2.10.4
-python-multipart==0.0.20
+# >= pins: pydantic 2.10.x has no Python 3.14 wheels (pydantic-core needs a
+# Rust toolchain to build); 2.12+ ships cp314 wheels. Docker (python:3.12-slim)
+# installs these ranges equally well.
+fastapi>=0.115.6
+uvicorn[standard]>=0.34.0
+pydantic>=2.12.0
+python-multipart>=0.0.20
