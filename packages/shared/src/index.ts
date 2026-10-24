@@ -9,3 +9,4 @@ export type SettlementMode = 'ONCHAIN_STABLECOIN' | 'OFFCHAIN_RECORD_ONLY';
 export const CONTRACT_VERSION = '1.0.0';
 
 export * from './eip712.js';
+export * from './shortCode.js';
