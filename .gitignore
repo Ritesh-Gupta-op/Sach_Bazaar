@@ -16,3 +16,4 @@ __pycache__/
 deployments/local.json
 deployments/amoy.json
 !deployments/*.example.json
+.zcode

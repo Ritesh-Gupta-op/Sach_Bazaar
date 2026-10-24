@@ -9,6 +9,15 @@
 
 The Hardhat test network is in-memory. No keys are needed for local tests.
 
+## Local demo stack (chain + API + web)
+
+1. `npx hardhat node` (from `packages/contracts`) — local chain on `http://127.0.0.1:8545`.
+2. `npx hardhat run scripts/demo-seed.ts --network localhost` — deploys the five contracts, grants roles to the deterministic accounts, seeds demo batches at different stages, and writes `deployments/local.json`.
+3. `pnpm dev:api` — NestJS API on `:3000` (`NETWORK=local`, `RPC_URL`, `RELAYER_PRIVATE_KEY` from `.env`; the demo seed grants `RELAYER_ROLE` to Hardhat account #1, whose key ships in the local `.env`).
+4. `pnpm dev:web` — frontend on `:5173`; search a short code (e.g. from the seed output) or open a demo batch. The **Console** tab drives the full lifecycle as any role (create batch → handovers → AI grade → fund escrow → mark sold → settle → withdraw): actions are signed in the browser with the public Hardhat demo wallets and submitted through the relayer API; escrow funding and payouts are submitted directly by the buyer/payout wallets. These wallets are for the local chain only — replace them with real user signers before any live network.
+
+To reset the chain: stop the node, restart it (accounts reset), and re-run the seed. `deployments/local.json` is overwritten each time and is gitignored.
+
 ## Environment variables
 
 `AMOY_RPC_URL`, `POLYGON_RPC_URL`, and the private key variables are never committed. API secrets and PII encryption keys are also environment-only. Use a KMS-backed secret in a deployed environment; the `.env` fallback is for local development only.

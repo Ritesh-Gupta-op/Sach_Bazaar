@@ -14,6 +14,8 @@
     "contracts:compile": "npm run compile --workspace @sachbazaar/contracts",
     "contracts:test": "npm run test --workspace @sachbazaar/contracts",
     "contracts:coverage": "npm run coverage --workspace @sachbazaar/contracts",
-    "contracts:slither": "npm run slither --workspace @sachbazaar/contracts"
+    "contracts:slither": "npm run slither --workspace @sachbazaar/contracts",
+    "dev:api": "npm run dev --workspace @sachbazaar/api",
+    "dev:web": "npm run dev --workspace @sachbazaar/web"
   }
 }

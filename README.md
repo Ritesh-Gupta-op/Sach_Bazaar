@@ -23,6 +23,8 @@ docker compose -f infra/docker-compose.yml up -d
 pnpm test
 ```
 
+Full local demo (chain + API + trace UI): see [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — `npx hardhat node`, the demo seed, `pnpm dev:api`, `pnpm dev:web`.
+
 Contract-specific commands:
 
 ```bash
@@ -32,4 +34,4 @@ pnpm contracts:coverage
 pnpm contracts:slither
 ```
 
-See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for environment variables, local chain usage, future Amoy deployment, key rotation, and the mainnet migration checklist.
+See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for environment variables, local chain usage, future Amoy deployment, key rotation, and the mainnet migration checklist. Notable changes are recorded in [`CHANGELOG.md`](CHANGELOG.md).
