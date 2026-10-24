@@ -5,7 +5,9 @@
     "moduleResolution": "Bundler",
     "outDir": "dist",
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*.ts"]
 }
