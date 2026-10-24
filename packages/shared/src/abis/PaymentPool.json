@@ -1,0 +1,703 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "stablecoin_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract SachAccess",
+        "name": "access_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract BatchRegistry",
+        "name": "batchRegistry_",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      }
+    ],
+    "name": "AddressEmptyCode",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "AddressInsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "BatchAlreadySettled",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EnforcedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "EscrowAlreadyFunded",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "EscrowNotFunded",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FailedInnerCall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "stage",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidBatchStage",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPolicy",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
+    ],
+    "name": "PayoutUnavailable",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "cropCode",
+        "type": "uint16"
+      }
+    ],
+    "name": "PolicyNotConfigured",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      }
+    ],
+    "name": "Unauthorized",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "BatchFunded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "cropCode",
+        "type": "uint16"
+      }
+    ],
+    "name": "BatchSettled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint16",
+        "name": "cropCode",
+        "type": "uint16"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "farmerBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "coopBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "truckerBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "coldStorageBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "mandiAgentBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "platformBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "minimumFarmerBps",
+            "type": "uint16"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct PaymentPool.CropPolicy",
+        "name": "policy",
+        "type": "tuple"
+      }
+    ],
+    "name": "PolicyUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payoutAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Withdrawal",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "BPS_DENOMINATOR",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_FARMER_BPS",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "VERSION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "access",
+    "outputs": [
+      {
+        "internalType": "contract SachAccess",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "batchRegistry",
+    "outputs": [
+      {
+        "internalType": "contract BatchRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      }
+    ],
+    "name": "claimable",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "cropCode",
+        "type": "uint16"
+      }
+    ],
+    "name": "cropPolicies",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "farmerBps",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "coopBps",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "truckerBps",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "coldStorageBps",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "mandiAgentBps",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "platformBps",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "minimumFarmerBps",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "depositorOf",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "depositor",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "escrowOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "fundBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "cropCode",
+        "type": "uint16"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "farmerBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "coopBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "truckerBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "coldStorageBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "mandiAgentBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "platformBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "minimumFarmerBps",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct PaymentPool.CropPolicy",
+        "name": "policy",
+        "type": "tuple"
+      }
+    ],
+    "name": "setCropPolicy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "farmer",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "coop",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "trucker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "coldStorage",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "mandiAgent",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "platform",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct PaymentPool.PayoutRecipients",
+        "name": "recipients",
+        "type": "tuple"
+      }
+    ],
+    "name": "settle",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "settled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "settled",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stablecoin",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "payoutAddress",
+        "type": "address"
+      }
+    ],
+    "name": "withdrawFor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

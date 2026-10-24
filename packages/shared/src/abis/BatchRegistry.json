@@ -1,0 +1,1546 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "contract SachAccess",
+        "name": "access_",
+        "type": "address"
+      },
+      {
+        "internalType": "contract FarmerRegistry",
+        "name": "farmerRegistry_",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "BatchAlreadyExists",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "BatchNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "DisputeNotAllowed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "photoHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "existingBatchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "DuplicatePhoto",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "farmerId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "coopId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "FarmerCoopMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "farmerId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "FarmerInactive",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "grade",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidAIGrade",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "cropCode",
+        "type": "uint16"
+      }
+    ],
+    "name": "InvalidCrop",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidDeadline",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidId",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "expected",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "actual",
+        "type": "bytes32"
+      }
+    ],
+    "name": "InvalidPreviousRecord",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidRole",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidShortString",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "stage",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidStage",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "from",
+        "type": "uint8"
+      },
+      {
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "to",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidTransition",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "NonceAlreadyUsed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "NotDisputed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PaymentPoolNotSet",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "RecordLimitReached",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "str",
+        "type": "string"
+      }
+    ],
+    "name": "StringTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      }
+    ],
+    "name": "Unauthorized",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "aiGrade",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "aiFlags",
+        "type": "uint16"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "resultHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "AIAttested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "farmerId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "coopId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "coopSigner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "buyerSigner",
+        "type": "address"
+      }
+    ],
+    "name": "BatchCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "BatchSettled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "finalPricePerKgPaise",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "buyerSigner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "mandiAgentSigner",
+        "type": "address"
+      }
+    ],
+    "name": "BatchSold",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "priorStage",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "reasonHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "DisputeRaised",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "outcome",
+        "type": "uint8"
+      }
+    ],
+    "name": "DisputeResolved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [],
+    "name": "EIP712DomainChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "stage",
+        "type": "uint8"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "recordHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "HandoverRecorded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "paymentPool",
+        "type": "address"
+      }
+    ],
+    "name": "PaymentPoolUpdated",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_RECORDS",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "TOMATO_CROP_CODE",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "VERSION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "access",
+    "outputs": [
+      {
+        "internalType": "contract SachAccess",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "aiGrade",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "aiFlags",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "resultHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "oracleSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BatchRegistry.AIAttestation",
+        "name": "a",
+        "type": "tuple"
+      }
+    ],
+    "name": "aiDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "aiGrade",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "aiFlags",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "resultHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "oracleSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "nonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BatchRegistry.AIAttestation",
+        "name": "a",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "oracleSig",
+        "type": "bytes"
+      }
+    ],
+    "name": "attestAI",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "farmerId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "coopId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "cropCode",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint32",
+            "name": "weightGrams",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pricePerKgPaise",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "photoHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "metadataHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "geoHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "coopSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "buyerSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "coopNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "buyerNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BatchRegistry.CreateBatchData",
+        "name": "d",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "coopSig",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "buyerSig",
+        "type": "bytes"
+      }
+    ],
+    "name": "createBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "farmerId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "coopId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "cropCode",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint32",
+            "name": "weightGrams",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pricePerKgPaise",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "photoHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "metadataHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "geoHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "coopSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "buyerSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "coopNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "buyerNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BatchRegistry.CreateBatchData",
+        "name": "d",
+        "type": "tuple"
+      },
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "signerRole",
+        "type": "uint8"
+      }
+    ],
+    "name": "createDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "custodianOf",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "custodian",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "disputePriorStage",
+    "outputs": [
+      {
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "priorStage",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "disputeReason",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "reasonHash",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "eip712Domain",
+    "outputs": [
+      {
+        "internalType": "bytes1",
+        "name": "fields",
+        "type": "bytes1"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "version",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "verifyingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "extensions",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "farmerRegistry",
+    "outputs": [
+      {
+        "internalType": "contract FarmerRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getBatch",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "farmerId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "coopId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "cropCode",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint32",
+            "name": "weightGrams",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pricePerKgPaise",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "photoHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "metadataHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "geoHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "aiGrade",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "aiFlags",
+            "type": "uint16"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "lastRecordHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "enum BatchRegistry.Stage",
+            "name": "stage",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint40",
+            "name": "createdAt",
+            "type": "uint40"
+          }
+        ],
+        "internalType": "struct BatchRegistry.Batch",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getRecords",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "recordHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "prevRecordHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "locationHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pricePerKgPaise",
+            "type": "uint32"
+          },
+          {
+            "internalType": "enum BatchRegistry.Stage",
+            "name": "stage",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint40",
+            "name": "timestamp",
+            "type": "uint40"
+          },
+          {
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct BatchRegistry.Record[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "fromSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "toSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "enum BatchRegistry.Stage",
+            "name": "nextStage",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pricePerKgPaise",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "locationHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "prevRecordHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "fromNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "toNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BatchRegistry.HandoverData",
+        "name": "h",
+        "type": "tuple"
+      },
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "handoverDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "markSettled",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "finalPricePerKgPaise",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "buyerSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "mandiAgentSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "buyerNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "mandiNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BatchRegistry.SaleData",
+        "name": "s",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "buyerSig",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "mandiAgentSig",
+        "type": "bytes"
+      }
+    ],
+    "name": "markSold",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "nonceUsed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "used",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paymentPool",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "photoHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "photoToBatch",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "reasonHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "raiseDispute",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "recordCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "address",
+            "name": "fromSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "toSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "enum BatchRegistry.Stage",
+            "name": "nextStage",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pricePerKgPaise",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "locationHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "prevRecordHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "fromNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "toNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BatchRegistry.HandoverData",
+        "name": "h",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "fromSig",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "toSig",
+        "type": "bytes"
+      }
+    ],
+    "name": "recordHandover",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "enum BatchRegistry.Stage",
+        "name": "outcome",
+        "type": "uint8"
+      }
+    ],
+    "name": "resolveDispute",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "batchId",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "finalPricePerKgPaise",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "buyerSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "mandiAgentSigner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "buyerNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "mandiNonce",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BatchRegistry.SaleData",
+        "name": "s",
+        "type": "tuple"
+      },
+      {
+        "internalType": "address",
+        "name": "signer",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "saleDigest",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "paymentPool_",
+        "type": "address"
+      }
+    ],
+    "name": "setPaymentPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "batchId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "verifyRecordChain",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
