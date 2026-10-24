@@ -1,0 +1,23 @@
+import type { DemoBatch, TraceResponse } from './types';
+
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/v1';
+
+export class TraceNotFoundError extends Error {
+  constructor() {
+    super('Batch not found on chain');
+  }
+}
+
+export async function fetchTrace(batchId: string): Promise<TraceResponse> {
+  const res = await fetch(`${API_URL}/trace/${batchId}`);
+  if (res.status === 404) throw new TraceNotFoundError();
+  if (!res.ok) throw new Error(`Trace API error (HTTP ${res.status})`);
+  return (await res.json()) as TraceResponse;
+}
+
+export async function fetchBatches(): Promise<DemoBatch[]> {
+  const res = await fetch(`${API_URL}/batches`);
+  if (!res.ok) throw new Error(`Batches API error (HTTP ${res.status})`);
+  const body = (await res.json()) as { batches: DemoBatch[] };
+  return body.batches;
+}
