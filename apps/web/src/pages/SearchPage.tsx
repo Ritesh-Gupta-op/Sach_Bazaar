@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { batchIdMatchesShortCode, isValidShortCode } from '@sachbazaar/shared';
 import { fetchBatches } from '../lib/api';
 import { addRecent, clearRecent, getRecent } from '../lib/recent';
@@ -16,15 +16,20 @@ const HEX32 = /^0x[0-9a-fA-F]{64}$/;
 
 export function SearchPage() {
   const navigate = useNavigate();
-  const [query, setQuery] = useState('');
+  const [params] = useSearchParams();
+  const initialQuery = params.get('q') ?? '';
+  const [query, setQuery] = useState(initialQuery);
   const [error, setError] = useState<string | null>(null);
   const [demoBatches, setDemoBatches] = useState<DemoBatch[]>([]);
+  const [batchesLoaded, setBatchesLoaded] = useState(false);
   const [recents, setRecents] = useState<DemoBatch[]>(getRecent());
+  const autoResolved = useRef(false);
 
   useEffect(() => {
     fetchBatches()
       .then(setDemoBatches)
-      .catch(() => setDemoBatches([]));
+      .catch(() => setDemoBatches([]))
+      .finally(() => setBatchesLoaded(true));
   }, []);
 
   const resolve = useCallback(
@@ -48,6 +53,15 @@ export function SearchPage() {
     },
     [demoBatches, navigate, recents],
   );
+
+  // Auto-resolve a query forwarded from the landing page (e.g. /trace?q=CODE)
+  // once the demo batch list is available so short codes match on first try.
+  useEffect(() => {
+    if (initialQuery && batchesLoaded && !autoResolved.current) {
+      autoResolved.current = true;
+      resolve(initialQuery);
+    }
+  }, [initialQuery, batchesLoaded, resolve]);
 
   const openBatch = (batch: DemoBatch) => {
     addRecent(batch);

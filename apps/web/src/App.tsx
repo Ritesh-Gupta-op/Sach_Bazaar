@@ -1,7 +1,8 @@
-import { Link, NavLink, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { SearchPage } from './pages/SearchPage';
 import { TracePage } from './pages/TracePage';
 import { ConsolePage } from './pages/ConsolePage';
+import { LandingPage } from './pages/LandingPage';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -10,8 +11,9 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
   ].join(' ');
 
 export function App() {
+  const isLanding = useLocation().pathname === '/';
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
+    <div className={`mx-auto px-4 py-6 ${isLanding ? 'max-w-6xl' : 'max-w-4xl'}`}>
       <header className="mb-8 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-xl font-bold">
           <span className="text-2xl" aria-hidden>
@@ -21,7 +23,7 @@ export function App() {
           <span className="hidden text-sm font-normal text-stone-500 sm:inline">farm-to-mandi trace</span>
         </Link>
         <nav className="flex items-center gap-2">
-          <NavLink to="/" end className={navClass}>
+          <NavLink to="/trace" className={navClass}>
             Trace
           </NavLink>
           <NavLink to="/console" className={navClass}>
@@ -30,7 +32,8 @@ export function App() {
         </nav>
       </header>
       <Routes>
-        <Route path="/" element={<SearchPage />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/trace" element={<SearchPage />} />
         <Route path="/trace/:batchId" element={<TracePage />} />
         <Route path="/console" element={<ConsolePage />} />
       </Routes>

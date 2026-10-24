@@ -8,6 +8,7 @@ Trace frontend, trace/relay API, journey console, AI advisory integration, and l
 
 ### Added
 
+- **Landing page and site map** (`apps/web`): `/` is now the project's public face — hero with journey strip and quick short-code search, the three problems (opaque pricing, no custody proof, slow settlement), a four-step "how it works" matching the real contract flow, the on-chain vs off-chain privacy stance, role cards for every actor, a live demo strip pulling seeded batches straight to their trace pages, and a tech band. Trace search moved to `/trace` (deep `/trace/:batchId` links unchanged) and auto-resolves a forwarded `?q=` query from the landing hero.
 - **Test coverage for every workspace** (previously only the contracts had tests; CI only ran contracts):
   - `packages/shared`: short-code tests plus a drift guard that fails if the TS typed-data definitions ever hash differently from the typehashes in `BatchRegistry.sol`.
   - `apps/web` (vitest): formatters, recent-batches storage, and relay payload builders — every signature is verified to recover to the expected signer, deadlines/nonces checked, API error surfacing covered.
