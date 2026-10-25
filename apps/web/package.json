@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@sachbazaar/shared": "workspace:*",
+    "@sachbazaar/shared": "file:../../packages/shared",
     "ethers": "^6.14.0",
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
