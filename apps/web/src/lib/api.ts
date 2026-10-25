@@ -1,6 +1,6 @@
 import type { DemoBatch, TraceResponse } from './types';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/v1';
+const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:3000/v1' : '/api');
 
 export class TraceNotFoundError extends Error {
   constructor() {
