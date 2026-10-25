@@ -19,13 +19,21 @@ import {
 import { TraceNotFoundError, fetchTrace, gradeWithAi, type AiGrade } from '../lib/api';
 import { rupeesPerKg, shortenHex } from '../lib/format';
 import type { TraceResponse } from '../lib/types';
-import { ACTOR_LABELS, PAYOUT_LABELS, PAYOUT_ROLES, actorWallets, payoutWallets } from '../lib/wallets';
+import {
+  ACTOR_LABELS,
+  type ActorRole,
+  DEMO_MODE,
+  PAYOUT_LABELS,
+  PAYOUT_ROLES,
+  connectConfiguredWallets,
+  type WalletConfig,
+} from '../lib/wallets';
 import { stageLabel } from '../components/StageTimeline';
 import { VerifiedBadge } from '../components/VerifiedBadge';
 
 type LogEntry = { label: string; detail: string; ok: boolean };
 
-const HANDOVER_PATHS: Record<string, { from: keyof typeof actorWallets; to: keyof typeof actorWallets; next: number; label: string }[]> = {
+const HANDOVER_PATHS: Record<string, { from: ActorRole; to: ActorRole; next: number; label: string }[]> = {
   FARM_GATE: [{ from: 'buyer', to: 'trucker', next: 1, label: 'Load onto truck → In transit' }],
   IN_TRANSIT: [{ from: 'trucker', to: 'coldStorage', next: 2, label: 'Receive at cold storage' }],
   COLD_STORAGE: [{ from: 'coldStorage', to: 'mandi', next: 3, label: 'Deliver to mandi agent' }],
@@ -54,6 +62,18 @@ export function ConsolePage() {
   const [salePrice, setSalePrice] = useState('');
   const [aiGradeResult, setAiGradeResult] = useState<AiGrade | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
+  const [walletConfig, setWalletConfig] = useState<WalletConfig | null>(null);
+  const [walletBusy, setWalletBusy] = useState(false);
+
+  const actors = walletConfig?.actors;
+  const payouts = walletConfig?.payouts;
+
+  useEffect(() => {
+    if (!DEMO_MODE) return;
+    void import('../lib/demo-wallets')
+      .then(({ demoWalletConfig }) => setWalletConfig(demoWalletConfig))
+      .catch((e: Error) => setError(`Demo wallets: ${e.message}`));
+  }, []);
 
   useEffect(() => {
     fetchRelayInfo()
@@ -77,9 +97,9 @@ export function ConsolePage() {
       if (!hopPrice) setHopPrice(String(Math.round(t.pricePerKgPaise / 100) + 2));
       if (!salePrice) setSalePrice(String(Math.round(t.pricePerKgPaise / 100) + 5));
       if (t.settlement.settled && info) {
-        const entries = await Promise.all(
-          PAYOUT_ROLES.map(async (role) => [role, await claimableFor(info, payoutWallets[role].address).catch(() => 0n)] as const),
-        );
+        const entries = payouts
+          ? await Promise.all(PAYOUT_ROLES.map(async (role) => [role, await claimableFor(info, payouts[role].address).catch(() => 0n)] as const))
+          : [];
         setClaimable(Object.fromEntries(entries));
       } else {
         setClaimable(null);
@@ -88,10 +108,10 @@ export function ConsolePage() {
       if (!(e instanceof TraceNotFoundError)) throw e;
       setTrace(null);
     }
-    if (info) {
-      setBuyerBalance(Number(await usdcBalanceOf(info, actorWallets.buyer.address).catch(() => 0n)));
+    if (info && actors) {
+      setBuyerBalance(Number(await usdcBalanceOf(info, actors.buyer.address).catch(() => 0n)));
     }
-  }, [hopPrice, salePrice, info]);
+  }, [hopPrice, salePrice, info, actors, payouts]);
 
   useEffect(() => {
     if (selected) void refresh(selected);
@@ -121,7 +141,19 @@ export function ConsolePage() {
   const domain = info?.eip712;
   const stage = trace?.stage;
   const handoverPath = stage ? (HANDOVER_PATHS[stage] ?? [])[0] : undefined;
-  const canAct = info?.configured === true;
+  const canAct = info?.configured === true && actors !== undefined;
+
+  const connectWallets = async () => {
+    setWalletBusy(true);
+    setError(null);
+    try {
+      setWalletConfig(await connectConfiguredWallets(info?.chainId));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setWalletBusy(false);
+    }
+  };
 
   /** Score → advisory grade bands (1 best … 4 worst) + a quality-concern flag under 0.5. */
   const applyAiResult = (result: AiGrade) => {
@@ -179,6 +211,22 @@ export function ConsolePage() {
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700">{error}</p>
       )}
 
+      {!DEMO_MODE && !walletConfig && (
+        <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+          <h2 className="font-bold text-blue-900">Connect role wallets</h2>
+          <p className="mt-1 text-sm text-blue-800">
+            Production mode does not embed private keys. Connect every configured actor and payout account in your browser wallet before signing.
+          </p>
+          <button
+            onClick={() => void connectWallets()}
+            disabled={walletBusy}
+            className="mt-3 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            {walletBusy ? 'Connecting…' : 'Connect wallets'}
+          </button>
+        </section>
+      )}
+
       <section>
         <h2 className="mb-3 text-sm font-bold tracking-wide text-stone-500 uppercase">Batches</h2>
         <div className="flex flex-wrap gap-2">
@@ -220,7 +268,7 @@ export function ConsolePage() {
             disabled={!canAct || busy !== null || !domain || !meta}
             onClick={() =>
               run('Create batch', async () => {
-                const result = await createBatch(domain!, actorWallets, {
+                const result = await createBatch(domain!, actors!, {
                   farmerId: meta!.farmerId,
                   coopId: meta!.coopId,
                   weightGrams: Math.round(parseFloat(newWeightKg || '0') * 1000),
@@ -269,7 +317,7 @@ export function ConsolePage() {
                 buttonLabel="Record handover"
                 onRun={() =>
                   run('handover', () =>
-                    recordHandover(domain!, { from: actorWallets[handoverPath.from], to: actorWallets[handoverPath.to] }, {
+                    recordHandover(domain!, { from: actors![handoverPath.from], to: actors![handoverPath.to] }, {
                       batchId: trace.batchId,
                       nextStage: handoverPath.next,
                       pricePerKgPaise: Math.round(parseFloat(hopPrice || '0') * 100),
@@ -338,7 +386,7 @@ export function ConsolePage() {
                 buttonLabel="Attest"
                 onRun={() =>
                   run('attest', () =>
-                    attestAI(domain!, actorWallets.oracle, {
+                    attestAI(domain!, actors!.oracle, {
                       batchId: trace.batchId,
                       grade: Number(grade),
                       flags: flagBits.reduce((mask, bit) => mask | (1 << bit), 0),
@@ -353,25 +401,27 @@ export function ConsolePage() {
                 title="Fund escrow"
                 signerNote={`${ACTOR_LABELS.buyer} submits directly (USDC approve + fund)`}
                 busy={busy === 'fund'}
-                disabled={!info}
+                disabled={!info || !actors}
                 inputs={
                   <div className="flex items-end gap-3">
                     <label className="text-sm">
                       <span className="block text-xs text-stone-400">Amount (USDC)</span>
                       <input value={fundAmount} onChange={(e) => setFundAmount(e.target.value)} inputMode="decimal" className="mt-1 w-28 rounded-lg border border-stone-300 px-3 py-2" />
                     </label>
-                    <button
-                      disabled={busy !== null}
-                      onClick={() => run('mint USDC', () => mintDemoUsdc(info!, actorWallets.admin, actorWallets.buyer.address, 500_000_000))}
-                      className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-40"
-                    >
-                      mint 500 (demo)
-                    </button>
+                    {DEMO_MODE && (
+                      <button
+                        disabled={busy !== null}
+                        onClick={() => run('mint USDC', () => mintDemoUsdc(info!, actors!.admin, actors!.buyer.address, 500_000_000))}
+                        className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-40"
+                      >
+                        mint 500 (demo)
+                      </button>
+                    )}
                     {buyerBalance !== null && <span className="pb-2 text-xs text-stone-400">buyer holds {usdc(buyerBalance)}</span>}
                   </div>
                 }
                 buttonLabel="Fund escrow"
-                onRun={() => run('fund', () => fundEscrow(info!, actorWallets.buyer, trace.batchId, Math.round(parseFloat(fundAmount || '0') * 1_000_000)))}
+                onRun={() => run('fund', () => fundEscrow(info!, actors!.buyer, trace.batchId, Math.round(parseFloat(fundAmount || '0') * 1_000_000)))}
               />
             )}
 
@@ -390,7 +440,7 @@ export function ConsolePage() {
                 buttonLabel="Mark sold"
                 onRun={() =>
                   run('mark sold', () =>
-                    markSold(domain!, { buyer: actorWallets.buyer, mandi: actorWallets.mandi }, {
+                    markSold(domain!, { buyer: actors!.buyer, mandi: actors!.mandi }, {
                       batchId: trace.batchId,
                       finalPricePerKgPaise: Math.round(parseFloat(salePrice || '0') * 100),
                     }).then((r) => r.txHash),
@@ -399,7 +449,7 @@ export function ConsolePage() {
               />
             )}
 
-            {trace.stage === 'SOLD' && (
+            {trace.stage === 'SOLD' && payouts && (
               <ActionCard
                 title="Settle escrow & split payouts"
                 signerNote="relayer/admin action · farmer 70% (config), remainder to supply chain"
@@ -409,7 +459,7 @@ export function ConsolePage() {
                   <ul className="space-y-0.5 text-xs text-stone-500">
                     {PAYOUT_ROLES.map((role) => (
                       <li key={role}>
-                        {PAYOUT_LABELS[role]}: <span className="font-mono">{shortenHex(payoutWallets[role].address, 4)}</span>
+                        {PAYOUT_LABELS[role]}: <span className="font-mono">{shortenHex(payouts![role].address, 4)}</span>
                       </li>
                     ))}
                   </ul>
@@ -418,19 +468,23 @@ export function ConsolePage() {
                 onRun={() =>
                   run('settle', () =>
                     settleBatch(trace.batchId, {
-                      farmer: payoutWallets.farmer.address,
-                      coop: payoutWallets.coop.address,
-                      trucker: payoutWallets.trucker.address,
-                      coldStorage: payoutWallets.coldStorage.address,
-                      mandiAgent: payoutWallets.mandiAgent.address,
-                      platform: payoutWallets.platform.address,
+                      farmer: payouts!.farmer.address,
+                      coop: payouts!.coop.address,
+                      trucker: payouts!.trucker.address,
+                      coldStorage: payouts!.coldStorage.address,
+                      mandiAgent: payouts!.mandiAgent.address,
+                      platform: payouts!.platform.address,
                     }).then((r) => r.txHash),
                   )
                 }
               />
             )}
 
-            {trace.stage === 'SETTLED' && (
+            {trace.stage === 'SOLD' && !payouts && (
+              <p className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">Connect the configured payout wallets before settling this batch.</p>
+            )}
+
+            {trace.stage === 'SETTLED' && payouts && (
               <div className="rounded-xl border border-stone-200 p-4">
                 <h3 className="text-sm font-bold">Payouts</h3>
                 <ul className="mt-2 space-y-1 text-xs">
@@ -440,13 +494,13 @@ export function ConsolePage() {
                     return (
                       <li key={role} className="flex items-center justify-between gap-2">
                         <span>
-                          {PAYOUT_LABELS[role]} — <span className="font-mono text-stone-400">{shortenHex(payoutWallets[role].address, 4)}</span>
+                          {PAYOUT_LABELS[role]} — <span className="font-mono text-stone-400">{shortenHex(payouts![role].address, 4)}</span>
                         </span>
                         <span className="flex items-center gap-2">
                           {amount !== null ? <span className="font-semibold">{usdc(Number(amount))}</span> : withdrawn ? <span className="text-stone-400">withdrawn / none</span> : '…'}
                           <button
                             disabled={busy !== null || amount === null || amount === 0n}
-                            onClick={() => run(`withdraw ${role}`, () => withdrawPayout(info!, payoutWallets[role]))}
+                            onClick={() => run(`withdraw ${role}`, () => withdrawPayout(info!, payouts![role]))}
                             className="rounded bg-stone-800 px-2 py-1 font-semibold text-white hover:bg-stone-700 disabled:opacity-30"
                           >
                             withdraw
@@ -457,6 +511,10 @@ export function ConsolePage() {
                   })}
                 </ul>
               </div>
+            )}
+
+            {trace.stage === 'SETTLED' && !payouts && (
+              <p className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">Connect the configured payout wallets to view and withdraw payouts.</p>
             )}
 
             {trace.stage === 'DISPUTED' && (

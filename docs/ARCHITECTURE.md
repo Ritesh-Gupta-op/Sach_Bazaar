@@ -31,4 +31,5 @@ Relayer ---- SachAccess / FarmerRegistry / BatchRegistry / PaymentPool
 
 - Phase 0: repository, infrastructure, documentation, CI, and runnable service shells.
 - Phase 1: non-upgradeable contract core with role control, dual-signature batch actions, AI attestations, disputes, escrow, pull payments, and tests.
-- Later phases: NestJS modules, Prisma schema, AI models, indexer, offline sync, deployment, and end-to-end trace flow.
+- Current pilot additions: NestJS Postgres storage schema, confirmation-aware BatchRegistry event indexer, dynamic on-chain batch discovery, receipt-backed relay responses, and demo/real-wallet boundaries.
+- Remaining production phases: JWT role guards, idempotency keys, offline sync, deployment, managed secrets, and a multi-application end-to-end trace flow.

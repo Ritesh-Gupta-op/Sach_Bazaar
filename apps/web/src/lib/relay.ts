@@ -1,6 +1,6 @@
-import { Contract, ethers, type BaseWallet, type TypedDataField } from 'ethers';
+import { Contract, ethers, type TypedDataField } from 'ethers';
 import { aiAttestationTypes, createBatchTypes, handoverTypes, saleTypes } from '@sachbazaar/shared';
-import { chainProvider } from './wallets';
+import { chainProvider, signerOf, type AppWallet } from './wallets';
 
 /**
  * The shared package exports its typed-data definitions with `as const`
@@ -44,9 +44,10 @@ const nextNonce = () => Date.now();
 const nextDeadline = () => Math.floor(Date.now() / 1000) + 3600;
 
 async function postRelay(action: string, data: unknown, signatures: Record<string, string>): Promise<RelayResult> {
+  const idempotencyKey = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({ action, data, signatures })));
   const res = await fetch(`${API_URL}/relay/${action}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
     body: JSON.stringify({ data, signatures }),
   });
   const body = (await res.json()) as { message?: string } & RelayResult;
@@ -58,7 +59,7 @@ async function postRelay(action: string, data: unknown, signatures: Record<strin
 
 export async function createBatch(
   domain: RelayInfo['eip712'],
-  signers: { coop: BaseWallet; buyer: BaseWallet },
+  signers: { coop: AppWallet; buyer: AppWallet },
   input: { farmerId: string; coopId: string; weightGrams: number; pricePerKgPaise: number },
 ): Promise<CreateBatchResult> {
   const data = {
@@ -93,7 +94,7 @@ export type CreateBatchResult = RelayResult & { batchId: string };
 
 export async function recordHandover(
   domain: RelayInfo['eip712'],
-  signers: { from: BaseWallet; to: BaseWallet },
+  signers: { from: AppWallet; to: AppWallet },
   input: { batchId: string; nextStage: number; pricePerKgPaise: number; prevRecordHash: string },
 ): Promise<RelayResult> {
   const data = {
@@ -115,7 +116,7 @@ export async function recordHandover(
 
 export async function attestAI(
   domain: RelayInfo['eip712'],
-  oracle: BaseWallet,
+  oracle: AppWallet,
   input: { batchId: string; grade: number; flags: number },
 ): Promise<RelayResult> {
   const data = {
@@ -133,7 +134,7 @@ export async function attestAI(
 
 export async function markSold(
   domain: RelayInfo['eip712'],
-  signers: { buyer: BaseWallet; mandi: BaseWallet },
+  signers: { buyer: AppWallet; mandi: AppWallet },
   input: { batchId: string; finalPricePerKgPaise: number },
 ): Promise<RelayResult> {
   const data = {
@@ -161,16 +162,17 @@ const ERC6_ABI = ['function approve(address, uint256) returns (bool)', 'function
 const POOL_ABI = ['function fundBatch(bytes32, uint256)', 'function claimable(address) view returns (uint256)', 'function withdraw()'];
 
 /** Demo helper: admin mints test USDC (local chain only — the admin key is a public Hardhat account). */
-export async function mintDemoUsdc(info: RelayInfo, admin: BaseWallet, to: string, amount: number): Promise<string> {
-  const token = new Contract(info.contracts.mockUsdc, ERC6_ABI, admin);
+export async function mintDemoUsdc(info: RelayInfo, admin: AppWallet, to: string, amount: number): Promise<string> {
+  const token = new Contract(info.contracts.mockUsdc, ERC6_ABI, signerOf(admin));
   const tx = await token.mint(to, amount);
   return tx.hash as string;
 }
 
 /** Escrow funding is buyer-direct (BUYER_ROLE, not relayer-gated): approve + fundBatch. */
-export async function fundEscrow(info: RelayInfo, buyer: BaseWallet, batchId: string, amount: number): Promise<string[]> {
-  const token = new Contract(info.contracts.mockUsdc, ERC6_ABI, buyer);
-  const pool = new Contract(info.contracts.paymentPool, POOL_ABI, buyer);
+export async function fundEscrow(info: RelayInfo, buyer: AppWallet, batchId: string, amount: number): Promise<string[]> {
+  const signer = signerOf(buyer);
+  const token = new Contract(info.contracts.mockUsdc, ERC6_ABI, signer);
+  const pool = new Contract(info.contracts.paymentPool, POOL_ABI, signer);
   const approveTx = await token.approve(info.contracts.paymentPool, amount);
   await approveTx.wait();
   const fundTx = await pool.fundBatch(batchId, amount);
@@ -183,8 +185,8 @@ export async function claimableFor(info: RelayInfo, address: string): Promise<bi
   return (await pool.claimable(address)) as bigint;
 }
 
-export async function withdrawPayout(info: RelayInfo, payoutWallet: BaseWallet): Promise<string> {
-  const pool = new Contract(info.contracts.paymentPool, POOL_ABI, payoutWallet);
+export async function withdrawPayout(info: RelayInfo, payoutWallet: AppWallet): Promise<string> {
+  const pool = new Contract(info.contracts.paymentPool, POOL_ABI, signerOf(payoutWallet));
   const tx = await pool.withdraw();
   return tx.hash as string;
 }

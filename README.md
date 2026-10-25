@@ -34,7 +34,7 @@ cd packages/contracts && npx hardhat node
 # 2. deploy + seed demo batches (settled, mid-journey, farm-gate)
 npx hardhat run scripts/demo-seed.ts --network localhost
 
-# 3. API (trace + relayer + AI proxy) on :3000
+# 3. API (trace + relayer + AI proxy + optional indexer) on :3000
 pnpm dev:api
 
 # 4. AI advisory service on :8001
@@ -44,10 +44,18 @@ cd apps/ai-service && .venv/Scripts/python -m uvicorn app.main:app --port 8001
 pnpm dev:web
 ```
 
+For durable batch listings and transaction status, start Postgres before the API:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres
+```
+
+The API creates its indexer schema automatically when `DATABASE_URL` is set. Without Postgres, it still discovers batches from on-chain `BatchCreated` events.
+
 ## What you can demo
 
 - **Trace** (`http://localhost:5173`): scan or type a crate short code (e.g. `FAFYKNWYT2L34`) → verified journey timeline, stage progress, AI grade, per-record hash verification, QR code.
-- **Console** (`/console`): act as any supply-chain role — create a dual-signed batch, walk it farm gate → truck → cold storage → mandi, grade a photo through the AI service and attest the result, fund USDC escrow, mark sold, settle the payout split, and withdraw. Everything is signed in-browser with the public Hardhat demo wallets (local chain only) and submitted through the relayer.
+- **Console** (`/console`): act as any supply-chain role — create a dual-signed batch, walk it farm gate → truck → cold storage → mandi, grade a photo through the AI service and attest the result, fund USDC escrow, mark sold, settle the payout split, and withdraw. Demo mode uses the public Hardhat wallets locally; production mode uses configured browser-wallet accounts and never embeds private keys.
 
 ## Development
 
@@ -60,7 +68,7 @@ pnpm contracts:coverage   # coverage
 pnpm contracts:slither    # static analysis (optional)
 ```
 
-Polygon Amoy (chainId 80002) is the development network; no testnet transaction is attempted without a funded `DEPLOYER_PRIVATE_KEY` and `AMOY_RPC_URL`. See the runbook for the deployment checklist, key rotation, and the mainnet migration notes.
+Polygon Amoy (chainId 80002) is the development network; no testnet transaction is attempted without a funded `DEPLOYER_PRIVATE_KEY` and `AMOY_RPC_URL`. For production web signing, set `VITE_DEMO_MODE=false`, configure the public role/payout addresses from `.env.example`, and connect those accounts through a browser wallet. See the runbook for the deployment checklist, key rotation, and the mainnet migration notes.
 
 ## Docs
 

@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional, ServiceUnavailableException } from '@nestjs/common';
 import type { Contract, Wallet } from 'ethers';
 import { ethers } from 'ethers';
 import { ChainService } from '../chain/chain.service';
+import { StorageService, type IdempotencyRecord } from '../storage/storage.service';
 
 export const RELAY_ACTIONS = ['create-batch', 'handover', 'ai-attest', 'mark-sold', 'settle'] as const;
 export type RelayAction = (typeof RELAY_ACTIONS)[number];
@@ -37,7 +38,12 @@ const REQUIRED_FIELDS: Record<RelayAction, { data: string[]; signatures: string[
  */
 @Injectable()
 export class RelayService {
-  constructor(private readonly chain: ChainService) {}
+  private readonly idempotency = new Map<string, IdempotencyRecord>();
+
+  constructor(
+    private readonly chain: ChainService,
+    @Optional() private readonly storage?: StorageService,
+  ) {}
 
   info() {
     return {
@@ -60,7 +66,11 @@ export class RelayService {
     };
   }
 
-  async submit(action: RelayAction, body: unknown): Promise<{ accepted: true; txHash: string; relayedBy: string; chainId: string }> {
+  async submit(
+    action: RelayAction,
+    body: unknown,
+    idempotencyKey?: string,
+  ): Promise<{ accepted: true; confirmed: true; txHash: string; blockNumber: number | null; relayedBy: string; chainId: string }> {
     let relayer: Wallet;
     try {
       relayer = this.chain.relayerOrThrow();
@@ -69,18 +79,64 @@ export class RelayService {
     }
 
     const { data, signatures } = this.validate(action, body);
+    const fingerprint = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify({ action, data, signatures })));
+    if (idempotencyKey) {
+      if (!/^[A-Za-z0-9._:-]{8,128}$/.test(idempotencyKey)) {
+        throw new BadRequestException('Idempotency-Key must be 8-128 ASCII letters, numbers, dots, underscores, colons, or hyphens');
+      }
+      const stored = this.idempotency.get(idempotencyKey) ?? (await this.storage?.getIdempotency(idempotencyKey)) ?? null;
+      if (stored) {
+        if (stored.fingerprint !== fingerprint) throw new BadRequestException('Idempotency-Key was already used for a different request');
+        return stored.response;
+      }
+    }
     const args: unknown[] = action === 'settle' ? [data.batchId, data.recipients] : [data, ...signatures];
 
     const [contract, method] = this.target(action);
-    const fn = (contract.connect(relayer) as unknown as Record<string, { staticCall: (...a: unknown[]) => Promise<unknown>; send: (...a: unknown[]) => Promise<{ hash: string }> }>)[method];
+    const fn = (contract.connect(relayer) as unknown as Record<
+      string,
+      {
+        staticCall: (...a: unknown[]) => Promise<unknown>;
+        send: (...a: unknown[]) => Promise<{ hash: string; wait: () => Promise<{ status?: number; blockNumber?: number }> }>;
+      }
+    >)[method];
 
     try {
       await fn.staticCall(...args);
     } catch (error) {
       throw new BadRequestException(`Transaction would revert: ${revertReason(error)}`);
     }
-    const tx = await fn.send(...args);
-    return { accepted: true, txHash: tx.hash, relayedBy: relayer.address, chainId: this.chain.deployment.chainId };
+    let tx: { hash: string; wait: () => Promise<{ status?: number; blockNumber?: number }> } | undefined;
+    try {
+      tx = await fn.send(...args);
+      const receipt = await tx.wait();
+      if (receipt.status === 0) throw new Error('transaction was mined with a failed status');
+      const response = {
+        accepted: true as const,
+        confirmed: true as const,
+        txHash: tx.hash,
+        blockNumber: receipt.blockNumber ?? null,
+        relayedBy: relayer.address,
+        chainId: this.chain.deployment.chainId,
+      };
+      await this.storage?.recordTransaction({
+        txHash: tx.hash,
+        action,
+        status: 'confirmed',
+        blockNumber: receipt.blockNumber ?? null,
+      });
+      if (idempotencyKey) {
+        const record = { fingerprint, response };
+        this.idempotency.set(idempotencyKey, record);
+        await this.storage?.setIdempotency(idempotencyKey, record);
+      }
+      return response;
+    } catch (error) {
+      if (tx?.hash) {
+        await this.storage?.recordTransaction({ txHash: tx.hash, action, status: 'failed', error: revertReason(error) });
+      }
+      throw new ServiceUnavailableException(`Transaction submission failed: ${revertReason(error)}`);
+    }
   }
 
   private target(action: RelayAction): [Contract, string] {

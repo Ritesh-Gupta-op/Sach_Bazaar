@@ -1,12 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { ethers } from 'ethers';
 import { ChainService } from '../chain/chain.service';
 import { STAGE_NAMES, shortCodeOf, verifyRecordWalk, type ChainRecord } from './trace.logic';
 import type { TraceRecordDto, TraceResponseDto } from './trace.dto';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class TraceService {
-  constructor(private readonly chain: ChainService) {}
+  constructor(
+    private readonly chain: ChainService,
+    @Optional() private readonly storage?: StorageService,
+  ) {}
 
   async getTrace(batchId: string): Promise<TraceResponseDto> {
     if (!ethers.isHexString(batchId, 32)) {
@@ -77,11 +81,49 @@ export class TraceService {
     };
   }
 
-  listDemoBatches(): { farmerId: string; coopId: string; batches: { batchId: string; shortCode: string; stage: string }[] } {
+  async listBatches(): Promise<{ farmerId: string; coopId: string; batches: { batchId: string; shortCode: string; stage: string }[] }> {
+    const batches = new Map<string, { batchId: string; shortCode: string; stage: string }>();
+    for (const batch of this.chain.deployment.demo?.batches ?? []) {
+      batches.set(batch.batchId, batch);
+    }
+
+    if (this.storage) {
+      for (const batch of await this.storage.listBatches()) {
+        batches.set(batch.batchId, {
+          batchId: batch.batchId,
+          shortCode: shortCodeOf(batch.batchId),
+          stage: batch.stage,
+        });
+      }
+    }
+
+    try {
+      const fromBlock = Number(process.env.INDEXER_FROM_BLOCK ?? 0);
+      const events = await this.chain.batchRegistry.queryFilter(this.chain.batchRegistry.filters.BatchCreated(), fromBlock, 'latest');
+      for (const event of events) {
+        const args = (event as ethers.EventLog).args;
+        const batchId = String(args?.batchId ?? args?.[0] ?? '');
+        if (!ethers.isHexString(batchId, 32)) continue;
+        const batch = await this.chain.batchRegistry.getBatch(batchId);
+        batches.set(batchId, {
+          batchId,
+          shortCode: shortCodeOf(batchId),
+          stage: STAGE_NAMES[Number(batch.stage)] ?? `UNKNOWN_${String(batch.stage)}`,
+        });
+      }
+    } catch {
+      // Deployment metadata remains a useful fallback when the RPC is unavailable.
+    }
+
     return {
       farmerId: this.chain.deployment.demo?.farmerId ?? ethers.ZeroHash,
       coopId: this.chain.deployment.demo?.coopId ?? ethers.ZeroHash,
-      batches: this.chain.deployment.demo?.batches ?? [],
+      batches: [...batches.values()],
     };
+  }
+
+  /** Backwards-compatible name used by older callers. */
+  listDemoBatches() {
+    return this.listBatches();
   }
 }

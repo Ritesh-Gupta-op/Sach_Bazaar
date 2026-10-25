@@ -12,6 +12,6 @@ export class TraceController {
 
   @Get('batches')
   listBatches() {
-    return this.trace.listDemoBatches();
+    return this.trace.listBatches();
   }
 }

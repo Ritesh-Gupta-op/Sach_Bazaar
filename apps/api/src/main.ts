@@ -3,6 +3,7 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { RateLimitGuard } from './security/rate-limit.guard';
 
 // The repo-root .env is the convention here; npm workspace runs have cwd = apps/api.
 dotenv.config({ path: path.join(__dirname, '..', '..', '..', '.env') });
@@ -12,6 +13,7 @@ export async function createApp() {
   const app = await NestFactory.create(AppModule, { logger: false });
   app.setGlobalPrefix('v1', { exclude: ['health'] });
   app.enableCors({ origin: true });
+  app.useGlobalGuards(new RateLimitGuard());
   return app;
 }
 

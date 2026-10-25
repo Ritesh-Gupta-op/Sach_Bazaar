@@ -4,8 +4,9 @@ import { ChainModule } from './chain/chain.module';
 import { TraceModule } from './trace/trace.module';
 import { RelayModule } from './relay/relay.module';
 import { AiModule } from './ai/ai.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
-  imports: [HealthModule, ChainModule, TraceModule, RelayModule, AiModule],
+  imports: [HealthModule, ChainModule, StorageModule, TraceModule, RelayModule, AiModule],
 })
 export class AppModule {}

@@ -4,16 +4,19 @@ import { aiAttestationTypes, createBatchTypes, handoverTypes, saleTypes } from '
 import { attestAI, createBatch, markSold, recordHandover, settleBatch, td } from './relay';
 
 const domain = { name: 'SachBazaar', version: '1', chainId: 31337, verifyingContract: '0x1234567890123456789012345678901234567890' } as const;
-const OK = { accepted: true as const, txHash: '0xtx', relayedBy: '0xrelayer', chainId: '31337' };
+const OK = { accepted: true as const, confirmed: true as const, txHash: '0xtx', blockNumber: 42, relayedBy: '0xrelayer', chainId: '31337' };
 
 let calls: { url: string; body: Record<string, unknown> }[];
+let headers: HeadersInit[];
 
 beforeEach(() => {
   calls = [];
+  headers = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url: String(url), body: JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown> });
+      headers.push(init?.headers ?? {});
       return new Response(JSON.stringify(OK), { status: 200 });
     }),
   );
@@ -31,6 +34,7 @@ describe('relay payload builders', () => {
     const result = await createBatch(domain, { coop, buyer }, { farmerId: ethers.id('f'), coopId: ethers.id('c'), weightGrams: 25_000, pricePerKgPaise: 1_000 });
 
     expect(calls[0].url).toMatch(/\/relay\/create-batch$/);
+    expect(new Headers(headers[0]).get('Idempotency-Key')).toMatch(/^0x[0-9a-f]{64}$/);
     expect(result.batchId).toMatch(/^0x[0-9a-f]{64}$/);
     const { data, signatures } = bodyOf();
     expect(data.coopSigner).toBe(coop.address);

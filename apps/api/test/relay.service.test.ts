@@ -17,7 +17,7 @@ function stubChain(options: { revertWith?: string } = {}): { chain: ChainService
       }
       return undefined;
     },
-    send: async () => ({ hash: '0xtxhash' }),
+     send: async () => ({ hash: '0xtxhash', wait: async () => ({ status: 1, blockNumber: 42 }) }),
   });
   // RelayService calls contract.connect(relayer) first and then indexes the
   // method on the connected instance — the stub mirrors that shape.
@@ -66,6 +66,8 @@ describe('RelayService.submit', () => {
       signatures: { coop: SIG(), buyer: SIG() },
     });
     assert.equal(result.txHash, '0xtxhash');
+    assert.equal(result.confirmed, true);
+    assert.equal(result.blockNumber, 42);
     assert.equal(captured[0].method, 'createBatch');
     assert.equal(captured[0].args.length, 3);
     assert.equal((captured[0].args[1] as string), SIG());
@@ -124,5 +126,24 @@ describe('RelayService.submit', () => {
     assert.equal(info.configured, true);
     assert.equal(info.network, 'local');
     assert.equal(info.eip712.name, 'SachBazaar');
+  });
+
+  it('replays a confirmed response for the same idempotency key', async () => {
+    const body = {
+      data: {
+        batchId: ethers.id('b'),
+        aiGrade: 1,
+        aiFlags: 0,
+        resultHash: ethers.id('r'),
+        oracleSigner: ethers.Wallet.createRandom().address,
+        nonce: 1,
+        deadline: FUTURE,
+      },
+      signatures: { oracle: SIG() },
+    };
+    const first = await service.submit('ai-attest', body, 'test-idempotency-key');
+    const second = await service.submit('ai-attest', body, 'test-idempotency-key');
+    assert.deepEqual(second, first);
+    assert.equal(captured.filter((entry) => entry.method === 'attestAI').length, 1);
   });
 });

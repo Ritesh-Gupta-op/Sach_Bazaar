@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ethers } from 'ethers';
 import { ChainService } from '../src/chain/chain.service';
-import { recordHashOf, type ChainRecord } from '../src/trace/trace.logic';
+import { recordHashOf, shortCodeOf, type ChainRecord } from '../src/trace/trace.logic';
 import { TraceService } from '../src/trace/trace.service';
 
 function recordWith(overrides: Partial<ChainRecord> = {}): Record<string, unknown> {
@@ -28,6 +28,7 @@ function stubChain(batch: Record<string, unknown>, records: Record<string, unkno
       getBatch: async () => batch,
       getRecords: async () => records,
       verifyRecordChain: async () => chainVerified,
+      filters: { BatchCreated: () => ({}) },
     },
     paymentPool: { settled: async () => settled },
     isRevertWith: (error: unknown, signature: string) =>
@@ -90,5 +91,19 @@ describe('TraceService.getTrace', () => {
     } as unknown as ChainService;
     await assert.rejects(new TraceService(notFoundChain).getTrace(ethers.id('missing')), NotFoundException);
     await assert.rejects(new TraceService(notFoundChain).getTrace('not-hex'), BadRequestException);
+  });
+});
+
+describe('TraceService.listBatches', () => {
+  it('discovers batches from BatchCreated logs instead of only deployment metadata', async () => {
+    const batchId = ethers.id('new-batch');
+    const chain = stubChain({ ...BATCH, batchId, stage: 0n }, [], true, false);
+    chain.batchRegistry.queryFilter = async () => [
+      {
+        args: { batchId },
+      },
+    ] as never;
+    const result = await new TraceService(chain).listBatches();
+    assert.deepEqual(result.batches, [{ batchId, shortCode: shortCodeOf(batchId), stage: 'FARM_GATE' }]);
   });
 });
