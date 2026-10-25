@@ -1,82 +1,205 @@
 # SachBazaar 🍅
 
-Farm-to-mandi traceability pilot for tomatoes on Polygon. The chain is an **audit anchor**, not the application database: farmers, co-ops, truckers, cold storage, and mandi agents sign EIP-712 typed-data actions, a gas-paying relayer submits them, and every custody hop becomes a hash-chained on-chain record. Photos, PII, and heavy data stay off-chain.
+Farm-to-mandi traceability pilot for tomatoes on Polygon. The blockchain serves strictly as an **audit anchor and escrow settler**, not the application database: supply-chain actors (farmers, co-ops, truckers, cold storage operators, mandi agents) sign EIP-712 structured actions client-side, an automated gas-paying relayer submits them on-chain, and every custody hop forms a cryptographically hash-chained record. Photos, PII, and bulk metadata remain off-chain.
 
-Users sign; the relayer pays gas; the contracts verify roles, nonces, deadlines, and state transitions; the public trace view recomputes every record hash before showing a `verified` badge.
+Users sign off-chain; the relayer pays network gas; the smart contracts strictly enforce roles, nonces, deadlines, and state transitions; the public trace engine recomputes every record hash before granting a `verified` status.
 
-## What's in the repo
+---
 
-| Workspace | What it is |
-|---|---|
-| `packages/contracts` | Non-upgradeable Solidity 0.8.24 contracts (`SachAccess` role registry, `FarmerRegistry`, `BatchRegistry` state machine, `PaymentPool` escrow, `MockUSDC`), Hardhat tests, deploy + demo-seed scripts |
-| `packages/shared` | EIP-712 typed-data definitions mirroring the contract typehashes, exported ABIs, batch short-code helpers |
-| `apps/api` | NestJS API: `GET /v1/trace/:batchId` with off-chain hash verification, `POST /v1/relay/*` meta-transaction relayer, AI advisory proxy |
-| `apps/web` | React + Vite frontend: public trace UI (short code / QR search, verified journey timeline) and the journey console that drives the full lifecycle as any role |
-| `apps/ai-service` | FastAPI advisory service — deterministic sha256-seeded grading mock until the real model lands |
-| `infra` | Docker Compose: Postgres, Redis, IPFS (for later phases) |
-| `deployments` | Per-network contract address files (`local.example.json` is the schema; real files are gitignored) |
+## 🏛️ System & Product Architecture
 
-## Quick start — full local demo
+SachBazaar decouples high-throughput Web2 operational speeds from Web3 zero-trust auditability using a modular, service-oriented architecture:
 
-Prerequisites: Node.js ≥ 20.18, pnpm 9.15.5 (`corepack enable`), Python 3.12+ for the AI service. Docker only needed for Postgres/Redis/IPFS (not required for the demo flow).
+```
+                                  ┌────────────────────────┐
+                                  │      Client Layer      │
+                                  │  (Web Trace & Console) │
+                                  └───────────┬────────────┘
+                                              │
+                         ┌────────────────────┼───────────────────┐
+                         │ HTTP /api          │ Direct Web3       │ AI Photo Upload
+                         ▼                    │ (Escrow / Pull)   ▼
+             ┌─────────────────────────┐      │         ┌───────────────────┐
+             │   NestJS API Gateway    │      │         │   FastAPI AI      │
+             │   (apps/api)            │      │         │   Advisory Svc    │
+             └───────────┬─────────────┘      │         │   (apps/ai-svc)   │
+                         │                    │         └─────────┬─────────┘
+        ┌────────────────┼────────────────┐   │                   │ (Quality score)
+        ▼                ▼                ▼   ▼                   │
+ ┌─────────────┐  ┌─────────────┐   ┌──────────────────────────┐  │
+ │  Postgres   │  │    Redis    │   │      Polygon / EVM       │◄─┘
+ │  (Indexer)  │  │   (Queue)   │   │  (Contracts Core)        │  (Attestation)
+ └─────────────┘  └─────────────┘   │                          │
+                                    │ • SachAccess (Roles)     │
+                                    │ • BatchRegistry (Hops)   │
+                                    │ • FarmerRegistry         │
+                                    │ • PaymentPool (Escrow)   │
+                                    │ • MockUSDC (Settlement)  │
+                                    └──────────────────────────┘
+```
 
+### Component Breakdown
+
+| Layer / Workspace | Tech Stack | Responsibility & Architecture Role |
+|---|---|---|
+| **`packages/contracts`** | Solidity 0.8.24, Hardhat, Ethers.js | **Audit Anchor & Escrow Engine**: Non-upgradeable contracts enforcing dual-signed state transitions (`BatchRegistry`), role-based access control (`SachAccess`), and multi-recipient escrow settlement (`PaymentPool`). |
+| **`packages/shared`** | TypeScript, Ethers.js | **Single Source of Truth**: EIP-712 typed-data definitions matching Solidity `keccak256` typehashes, shared contract ABIs, and 13-character Crockford-base32 short-code algorithms. |
+| **`apps/api`** | NestJS, TypeScript, Ethers.js | **Relayer & Trace Gateway**: Recomputes off-chain record hashes to detect tampering, manages the gas-sponsoring relayer wallet, proxies advisory AI grading, and discovers on-chain batches. |
+| **`apps/web`** | React 19, Vite, TailwindCSS | **Public Trace & Simulator Console**: Interactive public search by QR or short code, verified custody timeline, and a full role-simulator console supporting both demo keys and Web3 browser wallets. |
+| **`apps/ai-service`** | FastAPI, Python 3.12+, Pydantic | **Computer Vision Advisory Engine**: Analyzes produce photos for quality grading, defect detection, and anomaly scoring before on-chain oracle attestation. |
+| **`infra`** | Docker Compose | Optional local infrastructure: Postgres (indexer storage), Redis (task queues), and IPFS (decentralized image anchoring). |
+
+---
+
+## 🔄 Supply-Chain Lifecycle Workflow
+
+Each tomato crate navigates an immutable 5-stage lifecycle:
+
+```
+[ Farm Gate ] ──(Dual-Signed)──► [ In Transit ] ──(Dual-Signed)──► [ Cold Storage ]
+ (Co-op + Buyer)                  (Trucker)                         (Storage Agent)
+        │                                                                  │
+        ▼                                                                  ▼
+ [ AI Quality Grade ]                                              [ Mandi Market ]
+ (Oracle Attestation)                                                (Mandi Agent)
+                                                                           │
+                                                                           ▼
+                                                                 [ Settled / Escrow Payout ]
+                                                                   (Farmer, Co-op, Logistics)
+```
+
+1. **Farm Gate**: Co-op agent and buyer dual-sign the initial batch details (weight, base price, geo-coordinates, photo hash).
+2. **Custody Hops**: Every handover (Trucker $\rightarrow$ Cold Storage $\rightarrow$ Mandi) generates an on-chain record linked to the previous record hash (`prevRecordHash`).
+3. **AI Grading**: Photo is evaluated by the advisory AI service; score and flags are signed by an authorized oracle address.
+4. **Escrow Funding**: Buyer deposits USDC into the `PaymentPool` contract.
+5. **Settlement**: Upon final sale at the Mandi, the contract splits escrowed funds directly to farmer, co-op, trucker, cold storage, and market fees via non-reentrant pull payments.
+
+---
+
+## 🚀 CI / CD & Deployment Pipeline
+
+SachBazaar employs automated multi-tiered CI/CD pipelines ensuring contract security, cross-workspace TypeScript compilation, and monorepo cloud deployment.
+
+### 1. Continuous Integration (GitHub Actions)
+
+Defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml), triggered on every push and pull request:
+
+```
+GitHub Push / Pull Request
+  ├── Job 1: Contracts Pipeline (Ubuntu, Node 20)
+  │    ├── Install workspace dependencies (pnpm)
+  │    ├── Compile Solidity 0.8.24 contracts (Hardhat)
+  │    ├── Execute smart contract test suite
+  │    ├── Generate code coverage reports
+  │    └── Static Analysis: Crytic Slither Action (security audit)
+  │
+  ├── Job 2: Node Workspaces Pipeline (Ubuntu, Node 20)
+  │    ├── Monorepo-wide strict TypeScript typechecking (`pnpm typecheck`)
+  │    ├── Unit & integration tests for `@sachbazaar/shared` (typehash drift guards)
+  │    ├── Unit & integration tests for `@sachbazaar/api` (relay, trace, hash validation)
+  │    └── Unit & component tests for `@sachbazaar/web` (Vitest test suite)
+  │
+  └── Job 3: AI Service Pipeline (Ubuntu, Python 3.12)
+       ├── Install dependencies (`requirements.txt` + `requirements-dev.txt`)
+       └── Execute pytest test suite (grading determinism & health checks)
+```
+
+### 2. Continuous Delivery & Hosting (Vercel Multi-Service)
+
+Configured via [`vercel.json`](vercel.json), enabling single-project deployment across multiple micro-services:
+
+```
+                                  Internet Requests
+                                          │
+                        ┌─────────────────┴─────────────────┐
+                 /api/* │                                   │ /* (catch-all)
+                        ▼                                   ▼
+              ┌──────────────────┐                ┌──────────────────┐
+              │   Service: api   │                │   Service: web   │
+              │  (NestJS Server) │                │  (React / Vite)  │
+              └────────┬─────────┘                └──────────────────┘
+                       │
+                       │ Internal Binding (AI_SERVICE_URL)
+                       ▼
+              ┌──────────────────┐
+              │ Service: ai-svc  │
+              │  (FastAPI - INT) │
+              └──────────────────┘
+```
+
+- **`web`**: Public root `/` served by Vite static bundle.
+- **`api`**: Public backend routed through `/api/(.*)`.
+- **`ai-service`**: **Internal-only service**. Protected from public web access; accessible exclusively from `api` via secure internal Vercel Service Bindings (`AI_SERVICE_URL`).
+
+---
+
+## ⚡ Quick Start — Full Local Demo
+
+### Prerequisites
+- **Node.js**: $\ge$ 20.18.0
+- **Package Manager**: pnpm 9.15.5 (`corepack enable`)
+- **Python**: 3.12+ (for `apps/ai-service`)
+
+### 1. Clone & Install
 ```bash
+git clone https://github.com/Ritesh-Gupta-op/Sach_Bazaar.git
+cd Sach_Bazaar
 cp .env.example .env
 pnpm install
 ```
 
-Then five terminals (or see [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for details):
-
+### 2. Run Local Chain & Seed Demo Data
 ```bash
-# 1. local chain
+# Terminal 1: Start local Hardhat chain
 cd packages/contracts && npx hardhat node
 
-# 2. deploy + seed demo batches (settled, mid-journey, farm-gate)
+# Terminal 2: Deploy contracts & seed demo batches
 npx hardhat run scripts/demo-seed.ts --network localhost
+```
 
-# 3. API (trace + relayer + AI proxy + optional indexer) on :3000
+### 3. Start Backend, AI Service, and Frontend
+```bash
+# Terminal 3: NestJS API (Port 3000)
 pnpm dev:api
 
-# 4. AI advisory service on :8001
-cd apps/ai-service && .venv/Scripts/python -m uvicorn app.main:app --port 8001
+# Terminal 4: AI Service (Port 8001)
+cd apps/ai-service && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+uvicorn app.main:app --port 8001
 
-# 5. web on :5173
+# Terminal 5: Web Frontend (Port 5173)
 pnpm dev:web
 ```
 
-For durable batch listings and transaction status, start Postgres before the API:
+---
+
+## 🧪 Testing & Verification
+
+Run tests across all workspaces:
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d postgres
+pnpm test                 # Run all unit tests across API, Web, Shared, and Contracts
+pnpm typecheck            # Check TypeScript types across monorepo
+pnpm contracts:compile    # Compile Solidity artifacts
+pnpm contracts:test       # Execute Hardhat contract test suite
+pnpm contracts:coverage   # Generate Solidity code coverage
+pnpm contracts:slither    # Run Slither static security analyzer
 ```
 
-The API creates its indexer schema automatically when `DATABASE_URL` is set. Without Postgres, it still discovers batches from on-chain `BatchCreated` events.
+---
 
-## What you can demo
+## 📚 Technical Documentation
 
-- **Trace** (`http://localhost:5173`): scan or type a crate short code (e.g. `FAFYKNWYT2L34`) → verified journey timeline, stage progress, AI grade, per-record hash verification, QR code.
-- **Console** (`/console`): act as any supply-chain role — create a dual-signed batch, walk it farm gate → truck → cold storage → mandi, grade a photo through the AI service and attest the result, fund USDC escrow, mark sold, settle the payout split, and withdraw. Demo mode uses the public Hardhat wallets locally; production mode uses configured browser-wallet accounts and never embeds private keys.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System boundaries, trust rules, and state machines.
+- [`docs/HASHING.md`](docs/HASHING.md) — Byte-level hashing formulas that off-chain clients and smart contracts must adhere to.
+- [`docs/API.md`](docs/API.md) — Specification for the Trace, Relayer, and AI proxy endpoints.
+- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — Operational runbook: local demo stack, key management, testnet deployment, and key rotation.
+- [`docs/SECURITY.md`](docs/SECURITY.md) — Slither exclusions, threat model, and key security postures.
+- [`CHANGELOG.md`](CHANGELOG.md) — Chronological history of releases and enhancements.
 
-## Development
+---
 
-```bash
-pnpm test                 # contracts + API unit tests
-pnpm typecheck            # all workspaces
-pnpm contracts:compile    # Hardhat compile
-pnpm contracts:test       # contract suite only
-pnpm contracts:coverage   # coverage
-pnpm contracts:slither    # static analysis (optional)
-```
+## 🔒 Security & Environment Variables
 
-Polygon Amoy (chainId 80002) is the development network; no testnet transaction is attempted without a funded `DEPLOYER_PRIVATE_KEY` and `AMOY_RPC_URL`. For production web signing, set `VITE_DEMO_MODE=false`, configure the public role/payout addresses from `.env.example`, and connect those accounts through a browser wallet. See the runbook for the deployment checklist, key rotation, and the mainnet migration notes.
-
-## Docs
-
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system boundary and trust rules
-- [`docs/HASHING.md`](docs/HASHING.md) — the byte-level hashing contract every client must match
-- [`docs/API.md`](docs/API.md) — implemented endpoints and the planned trace shape
-- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — local demo stack, env vars, deployment, key rotation
-- [`docs/SECURITY.md`](docs/SECURITY.md) — Slither exclusions and security posture
-- [`CHANGELOG.md`](CHANGELOG.md) — notable changes
-
-Secrets live in `.env` (gitignored). Never commit private keys; nothing `VITE_`-prefixed is treated as secret.
+- Secrets and private keys are kept strictly in `.env` (gitignored).
+- Never commit private keys to version control.
+- In production, set `VITE_DEMO_MODE=false` in the frontend to disable simulated Hardhat wallets and enforce standard Web3 wallet connections (MetaMask, Coinbase Wallet, etc.).
