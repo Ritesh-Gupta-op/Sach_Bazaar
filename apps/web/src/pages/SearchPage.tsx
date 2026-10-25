@@ -70,8 +70,8 @@ export function SearchPage() {
 
   return (
     <div className="space-y-10">
-      <section className="rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-2xl font-bold sm:text-3xl">Trace a tomato batch</h1>
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-8 text-center shadow-soft">
+        <h1 className="text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">Trace a <span className="font-hand text-coral text-[1.15em] font-normal">tomato</span> batch</h1>
         <p className="mx-auto mt-2 max-w-md text-sm text-stone-500">
           Scan the QR code on the crate sticker or enter the batch short code to follow its journey from farm gate to mandi —
           every hop verified against the on-chain hash chain.
@@ -87,10 +87,10 @@ export function SearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="e.g. K7M2QXA… or 0x…full batch id"
-            className="w-full rounded-lg border border-stone-300 px-4 py-2.5 font-mono text-sm uppercase focus:border-orange-500 focus:ring-2 focus:ring-orange-200 focus:outline-none"
+            className="w-full rounded-lg border border-stone-300 px-4 py-2.5 font-mono text-sm uppercase focus:border-coral focus:ring-2 focus:ring-coral-soft focus:outline-none"
             aria-label="Batch short code or ID"
           />
-          <button type="submit" className="rounded-lg bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700">
+          <button type="submit" className="rounded-lg bg-coral px-5 py-2.5 text-sm font-semibold text-white hover:brightness-95">
             Trace
           </button>
         </form>
@@ -106,7 +106,7 @@ export function SearchPage() {
               <button
                 key={b.batchId}
                 onClick={() => openBatch(b)}
-                className="rounded-xl border border-stone-200 bg-white p-4 text-left shadow-sm transition hover:border-orange-400 hover:shadow"
+                className="rounded-xl border border-stone-200 bg-white p-4 text-left shadow-soft transition hover:border-coral hover:shadow"
               >
                 <span className="font-mono text-lg font-bold">{b.shortCode}</span>
                 <span className="mt-1 block text-xs text-stone-500">{stageLabel(b.stage)}</span>
@@ -201,7 +201,7 @@ function QrScannerButton({ onDetected }: { onDetected: (code: string) => void })
   return (
     <div className="mt-4">
       {!scanning ? (
-        <button type="button" onClick={() => void start()} className="text-sm font-medium text-orange-700 underline hover:text-orange-800">
+        <button type="button" onClick={() => void start()} className="text-sm font-medium text-ink underline decoration-coral underline-offset-2 hover:text-muted">
           Scan QR code with camera
         </button>
       ) : (

@@ -30,14 +30,14 @@ export function StageTimeline({ stage }: { stage: string }) {
         const isCurrent = i === current;
         return (
           <li key={s} className="flex items-center gap-1">
-            {i > 0 && <span className={`h-0.5 w-4 ${done ? 'bg-green-500' : 'bg-stone-300'}`} aria-hidden />}
+            {i > 0 && <span className={`h-0.5 w-4 ${done ? 'bg-moss' : 'bg-stone-300'}`} aria-hidden />}
             <span
               className={[
                 'rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap',
                 isCurrent
-                  ? 'bg-orange-600 text-white ring-2 ring-orange-600 ring-offset-2'
+                  ? 'bg-coral text-white ring-2 ring-coral ring-offset-2'
                   : done
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-sage text-ink'
                     : 'bg-stone-100 text-stone-400',
               ].join(' ')}
             >

@@ -40,9 +40,9 @@ export function TracePage() {
 
   if (error || !trace) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+      <div className="rounded-[2rem] border border-red-200 bg-red-50 p-8 text-center">
         <p className="font-semibold text-red-800">{error ?? 'Something went wrong'}</p>
-        <button onClick={() => batchId && void load(batchId)} className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white">
+        <button onClick={() => batchId && void load(batchId)} className="mt-4 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream">
           Retry
         </button>
       </div>
@@ -54,19 +54,19 @@ export function TracePage() {
   return (
     <div className="space-y-6">
       <div
-        className={`rounded-2xl px-6 py-4 text-center text-lg font-bold ${trace.verified ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
+        className={`rounded-[2rem] px-6 py-4 text-center text-lg font-bold ${trace.verified ? 'bg-sage text-ink' : 'bg-coral text-ink'}`}
       >
         {trace.verified ? '✓ Every journey record matches the on-chain hash chain' : '✗ Hash chain mismatch — do not trust this journey'}
       </div>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-bold capitalize">{trace.crop}</h1>
-              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800">{stageLabel(trace.stage)}</span>
+              <span className="rounded-full bg-coral-soft px-3 py-1 text-xs font-bold text-ink">{stageLabel(trace.stage)}</span>
               {trace.settlement.settled && (
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800">escrow settled</span>
+                <span className="rounded-full bg-sage px-3 py-1 text-xs font-bold text-ink">escrow settled</span>
               )}
             </div>
             <dl className="mt-4 grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
@@ -101,7 +101,7 @@ export function TracePage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
         <h2 className="text-sm font-bold tracking-wide text-stone-500 uppercase">AI advisory grade</h2>
         {trace.ai.grade === 0 ? (
           <p className="mt-2 text-sm text-stone-500">Not graded yet.</p>

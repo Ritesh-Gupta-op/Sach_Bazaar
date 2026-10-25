@@ -162,8 +162,8 @@ export function ConsolePage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-bold">Journey console</h1>
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
+        <h1 className="text-xl font-semibold tracking-[-0.025em] sm:text-2xl">Journey <span className="font-hand text-coral text-[1.15em] font-normal">console</span></h1>
         <p className="mt-1 text-sm text-stone-500">
           Act as any supply-chain role. Actions are signed locally with the demo wallets and submitted through the gas-paying relayer —
           exactly the flow real actor apps will use.
@@ -192,7 +192,7 @@ export function ConsolePage() {
               }}
               className={[
                 'rounded-full px-4 py-2 text-sm font-semibold',
-                selected === b.batchId ? 'bg-orange-600 text-white' : 'bg-white text-stone-700 border border-stone-200 hover:border-orange-400',
+                selected === b.batchId ? 'bg-coral text-white' : 'bg-white text-stone-700 border border-stone-200 hover:border-coral',
               ].join(' ')}
             >
               <span className="font-mono">{b.shortCode}</span> · {stageLabel(b.stage)}
@@ -202,7 +202,7 @@ export function ConsolePage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
         <h2 className="text-sm font-bold tracking-wide text-stone-500 uppercase">Create batch</h2>
         <p className="mt-1 text-xs text-stone-400">
           Dual-signed by {ACTOR_LABELS.coop} + {ACTOR_LABELS.buyer}. Batch ID derived per docs/HASHING.md.
@@ -232,7 +232,7 @@ export function ConsolePage() {
                 return result.txHash;
               })
             }
-            className="rounded-lg bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40"
+            className="rounded-lg bg-coral px-5 py-2.5 text-sm font-semibold text-white hover:brightness-95 disabled:opacity-40"
           >
             {busy === 'Create batch' ? 'Signing & submitting…' : 'Create batch'}
           </button>
@@ -240,15 +240,15 @@ export function ConsolePage() {
       </section>
 
       {trace && (
-        <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-mono text-lg font-bold">{trace.shortCode}</h2>
-              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800">{stageLabel(trace.stage)}</span>
+              <span className="rounded-full bg-coral-soft px-3 py-1 text-xs font-bold text-ink">{stageLabel(trace.stage)}</span>
               <VerifiedBadge verified={trace.verified} />
-              {trace.settlement.settled && <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800">escrow settled</span>}
+              {trace.settlement.settled && <span className="rounded-full bg-sage px-3 py-1 text-xs font-bold text-ink">escrow settled</span>}
             </div>
-            <Link to={`/trace/${trace.batchId}`} className="text-sm font-medium text-orange-700 underline">
+            <Link to={`/trace/${trace.batchId}`} className="text-sm font-medium text-ink underline decoration-coral underline-offset-2">
               open trace view →
             </Link>
           </div>
