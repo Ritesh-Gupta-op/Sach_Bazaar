@@ -22,6 +22,7 @@ export function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [demoBatches, setDemoBatches] = useState<DemoBatch[]>([]);
   const [batchesLoaded, setBatchesLoaded] = useState(false);
+  const [stageFilter, setStageFilter] = useState('ALL');
   const [recents, setRecents] = useState<DemoBatch[]>(getRecent());
   const autoResolved = useRef(false);
 
@@ -63,6 +64,12 @@ export function SearchPage() {
     }
   }, [initialQuery, batchesLoaded, resolve]);
 
+  const filteredBatches = demoBatches.filter((batch) => {
+    const matchesStage = stageFilter === 'ALL' || batch.stage === stageFilter;
+    const matchesQuery = `${batch.shortCode} ${batch.batchId}`.toLowerCase().includes(query.trim().toLowerCase());
+    return matchesStage && matchesQuery;
+  });
+
   const openBatch = (batch: DemoBatch) => {
     addRecent(batch);
     navigate(`/trace/${batch.batchId}`);
@@ -100,9 +107,14 @@ export function SearchPage() {
 
       {demoBatches.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-bold tracking-wide text-stone-500 uppercase">Demo batches</h2>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-bold tracking-wide text-stone-500 uppercase">Demo batches ({filteredBatches.length})</h2>
+            <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} aria-label="Filter batches by stage" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs">
+              <option value="ALL">All stages</option><option value="FARM_GATE">Farm gate</option><option value="IN_TRANSIT">In transit</option><option value="COLD_STORAGE">Cold storage</option><option value="MANDI">Mandi</option>
+            </select>
+          </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            {demoBatches.map((b) => (
+            {filteredBatches.map((b) => (
               <button
                 key={b.batchId}
                 onClick={() => openBatch(b)}
@@ -113,6 +125,7 @@ export function SearchPage() {
               </button>
             ))}
           </div>
+          {filteredBatches.length === 0 && <p className="rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-500">No batches match this search/filter.</p>}
         </section>
       )}
 
