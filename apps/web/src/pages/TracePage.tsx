@@ -9,6 +9,28 @@ import { RecordCard } from '../components/RecordCard';
 import { StageTimeline, stageLabel } from '../components/StageTimeline';
 import { VerifiedBadge } from '../components/VerifiedBadge';
 
+function downloadTraceCsv(trace: TraceResponse) {
+  const rows = [
+    ['Batch ID', trace.batchId], ['Short code', trace.shortCode], ['Crop', trace.crop],
+    ['Stage', trace.stage], ['Weight (grams)', String(trace.weightGrams)],
+    ['Price per kg (paise)', String(trace.pricePerKgPaise)], ['Created at', trace.createdAt],
+    ['Verified', String(trace.verified)], [],
+    ['Record #', 'Stage', 'From', 'To', 'Timestamp', 'Record hash', 'Previous hash', 'Verified'],
+    ...trace.records.map((r) => [String(r.index), r.stage, r.from, r.to, r.timestamp, r.recordHash, r.prevRecordHash, String(r.verified)]),
+  ];
+  const csv = rows.map((row) => row.map((cell) => {
+    const value = String(cell ?? '');
+    return '"' + value.replace(/"/g, '""') + '"';
+  }).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `sachbazaar-${trace.shortCode}-trace.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 export function TracePage() {
   const { batchId } = useParams<{ batchId: string }>();
   const [trace, setTrace] = useState<TraceResponse | null>(null);
@@ -60,6 +82,7 @@ export function TracePage() {
       </div>
 
       <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-soft">
+        <div className="mb-4 flex justify-end"><button type="button" onClick={() => downloadTraceCsv(trace)} className="rounded-full border border-stone-300 px-4 py-2 text-xs font-semibold text-stone-600 transition hover:border-coral hover:text-ink">Export trace CSV ↓</button></div>
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">

@@ -1,37 +1,108 @@
 import { Link, NavLink } from 'react-router-dom';
 
-const linkClass = ({ isActive }: { isActive: boolean }) => ['text-sm font-medium transition-colors', isActive ? 'text-ink' : 'text-muted hover:text-ink'].join(' ');
+const linkClass = ({ isActive }: { isActive: boolean }) =>
+  [
+    'relative text-sm font-medium transition-colors duration-200',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#315C43] focus-visible:ring-offset-4',
+    isActive
+      ? 'text-[#214B35]'
+      : 'text-stone-500 hover:text-[#214B35]',
+  ].join(' ');
 
-/**
- * Floating pill navigation: 70% white, 20px backdrop blur, coral logo dot,
- * dark pill CTA. Width is the viewport minus 32px on mobile.
- */
 export function FloatingNav() {
   return (
-    <nav className="fixed top-4 left-1/2 z-40 w-[calc(100%-32px)] max-w-xl -translate-x-1/2">
-      <div className="flex items-center justify-between gap-3 rounded-full border border-white/60 bg-white/70 py-2 pr-2 pl-3 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] backdrop-blur-[20px]">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-coral">
-            <span className="h-1.5 w-1.5 rounded-full bg-white" />
+    <nav
+      aria-label="Main navigation"
+      className="fixed left-1/2 top-4 z-40 w-[calc(100%-24px)] max-w-3xl -translate-x-1/2 sm:top-5 sm:w-[calc(100%-40px)]"
+    >
+      <div className="flex items-center justify-between gap-3 rounded-full border border-[#E5E9DF] bg-[#FDFCF8]/95 py-2 pl-3 pr-2 shadow-[0_8px_30px_rgba(27,54,38,0.08)] backdrop-blur-xl sm:pl-4">
+        {/* Brand */}
+        <Link
+          to="/"
+          aria-label="Sach Bazaar home"
+          className="group flex shrink-0 items-center gap-2.5"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#214B35] transition-transform duration-300 group-hover:rotate-[-6deg]">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              className="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path
+                d="M19.5 4.5C11 4.5 5 8 5 14a5 5 0 0 0 5 5c6 0 9.5-7 9.5-14.5Z"
+                stroke="#FDFCF8"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M4 21c3-5 6.5-8 11-11"
+                stroke="#FFB7B2"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
           </span>
-          <span className="text-sm font-semibold tracking-tight">Sach Bazaar</span>
+
+          <span className="text-[15px] font-semibold tracking-[-0.5px] text-[#214B35] sm:text-base">
+            Sach Bazaar
+          </span>
         </Link>
-        <div className="hidden items-center gap-5 sm:flex">
+
+        {/* Navigation links */}
+        <div className="hidden items-center gap-6 md:flex">
           <NavLink to="/trace" className={linkClass}>
-            Trace
+            Trace Produce
           </NavLink>
+
           <NavLink to="/console" className={linkClass}>
             Console
           </NavLink>
-          <a href="#faq" className="text-sm font-medium text-muted transition-colors hover:text-ink">
+
+          <Link
+            to="/#faq"
+            className="text-sm font-medium text-stone-500 transition-colors duration-200 hover:text-[#214B35] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#315C43]"
+          >
             FAQ
-          </a>
+          </Link>
         </div>
+
+        {/* Mobile trace link */}
+        <NavLink
+          to="/trace"
+          className={({ isActive }) =>
+            [
+              'text-xs font-medium transition-colors md:hidden',
+              isActive
+                ? 'text-[#214B35]'
+                : 'text-stone-500 hover:text-[#214B35]',
+            ].join(' ')
+          }
+        >
+          Trace
+        </NavLink>
+
+        {/* Primary CTA */}
         <Link
           to="/console"
-          className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-cream transition-transform hover:scale-105"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#214B35] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#163D2B] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#315C43] focus-visible:ring-offset-2 sm:px-5 sm:text-sm"
         >
-          Try demo
+          <span>Try demo</span>
+          <svg
+            viewBox="0 0 20 20"
+            fill="none"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 10h12m-5-5 5 5-5 5"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </Link>
       </div>
     </nav>
